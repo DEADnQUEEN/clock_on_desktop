@@ -1,15 +1,93 @@
 import datetime
 import time
 import tkinter
-import os
 
 
-back = '#333333'
-fg = '#ffffff'
+back = '#333333' #backgrond color
+fg = '#ffffff' #color of text
 possible_pos = ['nw', 'n', 'ne', 'w', 'center', 'e', 'sw', 's', 'se']
+font = 'JetBrains Mono'
+bd = 1
+
+rgb_code = [f'{i}' for i in range(10)]
+rgb_code.extend([j for j in 'abcdef'])
+print(rgb_code)
+
+main_bg = []
+primary_bg = []
+text_color_buttons = []
+
+with open('words.txt', 'r') as text:
+    text = text.readlines()
+    for i in range(len(text)):
+        text[i] = text[i].rstrip('\n')
+
+
+def borderizer(x: int, y: int, w: int, h: int, border=bd):
+    if x <= border:
+        x = border
+
+    if y <= border:
+        y = border
+
+    if w <= border:
+        w = 0
+
+    if h <= border:
+        h = 0
+
+    lbl = tkinter.Label(window, background=fg)
+    lbl.place(x=x - border, y=y - border, width=w + (2 * border), height=h + (2 * border))
+
+    return lbl
+
+
+def color_btn():
+    return tkinter.Button(window,
+                          text='colorize'.upper(),
+                          background=back,
+                          fg='white',
+                          borderwidth=0,
+                          command=lambda: color())
+
+
+def entry_place():
+    return tkinter.Entry(window,
+                         font=(font, 16),
+                         justify='left',
+                         background='white',
+                         foreground='#333333')
+
+
+def color():
+    global back, fg, main_bg, primary_bg
+
+    if len(entry_main_color.get()) == 6:
+        for f in entry_main_color.get().lower():
+            if f not in rgb_code:
+                break
+        else:
+            back = f'#{entry_main_color.get().lower()}'
+            for k in main_bg:
+                k.config(background=back)
+
+    if len(entry_primary_color.get()) == 6:
+        for f in entry_primary_color.get().lower():
+            if f not in rgb_code:
+                break
+        else:
+            fg = f'#{entry_primary_color.get().lower()}'
+            for k in primary_bg:
+                k.config(background=fg)
+
+            for k in text_color_buttons:
+                k.config(foreground=fg)
 
 
 def clock_app(pos: str in possible_pos):
+    res_x = app.winfo_screenwidth()
+    res_y = app.winfo_screenheight()
+
     app.destroy()
     print(pos)
 
@@ -66,48 +144,70 @@ def clock_app(pos: str in possible_pos):
         clock.update()
 
 
-try:
-    from screeninfo import get_monitors
-except ImportError:
-    os.system('pip install screeninfo')
-    from screeninfo import get_monitors
-
-for i in get_monitors():
-    if i.is_primary:
-        res_x = i.width
-        res_y = i.height
-        break
-else:
-    raise Exception('monitors')
-
 app = tkinter.Tk()
 app.overrideredirect(True)
 app.resizable(width=False, height=False)
+app.geometry(f'1000x600+{int(app.winfo_screenwidth() / 2 - 500)}+{int(app.winfo_screenheight() / 2 - 300)}')
+title_bar = tkinter.Frame(app,
+                          relief='flat',
+                          background=back,
+                          bd=2)
+main_bg.append(title_bar)
+close = tkinter.Button(app,
+                       bg='#ed4245',
+                       text='X',
+                       font=(font, 14),
+                       borderwidth=0,
+                       border=None,
+                       anchor='center',
+                       command=lambda: app.destroy()
+                       )
 
-btn_size = 200
-window_size = btn_size * 3
+title_bar.place(x=0, y=0, width=1000, height=40)
+close.place(x=960, y=0, width=40, height=40)
 
+window = tkinter.Frame(app,
+                       background=back)
+window.place(x=0, y=40, width=1000, height=600)
+main_bg.append(window)
 
-width = int(round((res_x - window_size) / 2))
-height = int(round((res_y - window_size) / 2))
+#borders
+btn_border_line = borderizer(x=549, y=149, w=302, h=302)
+top_border_line = borderizer(x=0, y=0, w=1000, h=bd)
 
+primary_bg.extend([top_border_line, btn_border_line])
 
-app.geometry(f'{window_size}x{window_size}+{width}+{height}')
-
-for i in range(int(len(possible_pos) ** (1 / 2))):
-    for j in range(int(len(possible_pos) ** (1 / 2))):
-        print(f'btn{i}{j} - {possible_pos[i * (int(len(possible_pos) ** (1 / 2))) + j]}')
-        poss = f'{possible_pos[i * (int(len(possible_pos) ** (1 / 2))) + j]}'
-        btn = tkinter.Button(app,
-                             borderwidth=0,
-                             text='HERE',
-                             relief='flat',
-                             anchor=poss,
+#buttons of places
+for i in range(3):
+    for j in range(3):
+        btn = tkinter.Button(window,
+                             text=f'{text[0]}\n{text[1]}'.upper(),
+                             bd=0,
                              background=back,
-                             fg=fg,
-                             font=('Arial Black', round(btn_size * 0.15)),
-                             command=lambda poss=poss: clock_app(poss)
-                             )
-        btn.place(y=i * btn_size, x=j * btn_size, height=btn_size, width=btn_size)
+                             foreground='white',
+                             anchor=possible_pos[3 * i + j],
+                             font=(font, 16),
+                             command=lambda i=i, j=j: clock_app(possible_pos[3 * i + j]))
+        main_bg.append(btn)
+        text_color_buttons.append(btn)
+
+        btn.place(x=550 + (100 * j), y=150 + (100 * i), width=100, height=100)
+
+
+#main color entry
+entry_main_color = entry_place()
+entry_main_color.place(x=100, y=193, width=100, height=20)
+btn_main_color = color_btn()
+main_bg.append(btn_main_color)
+text_color_buttons.append(btn_main_color)
+btn_main_color.place(x=262, y=193, width=100, height=20)
+
+#primary color entry
+entry_primary_color = entry_place()
+entry_primary_color.place(x=100, y=273, width=100, height=20)
+btn_primary_color = color_btn()
+main_bg.append(btn_primary_color)
+text_color_buttons.append(btn_primary_color)
+btn_primary_color.place(x=262, y=273, width=100, height=20)
 
 app.mainloop()
